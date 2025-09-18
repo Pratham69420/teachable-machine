@@ -42,22 +42,30 @@ h2 { margin: 20px 0; color: #333; font-weight: 600; }
 .class-counter { margin-top: 5px; font-size: 14px; color: #555; }
 #webcam { border-radius:12px; width:320px; max-width:90%; margin-top:20px; box-shadow:0 4px 15px rgba(0,0,0,0.15);}
 #result { margin-top:20px; font-size:20px; font-weight:bold; color:#333; }
+#cameraControls { margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; }
 </style>
 </head>
 <body>
 
 <h2>Dynamic Teachable Machine</h2>
 
-<div id="controls">
+<div id="devicePrompt">
+  <p>Are you on a phone or computer?</p>
+  <button onclick="setDevice('phone')">Phone</button>
+  <button onclick="setDevice('computer')">Computer</button>
+</div>
+
+<div id="controls" style="display:none;">
   <input type="number" id="numClasses" placeholder="Number of classes" min="1" style="width:150px;">
   <button onclick="createClasses()">Create Classes</button>
 </div>
 
 <div id="classesContainer"></div>
 
-<video id="webcam" autoplay playsinline></video>
+<video id="webcam" autoplay playsinline style="display:none;"></video>
+<div id="cameraControls"></div>
 
-<div style="margin-top:15px;">
+<div>
   <input type="file" id="imageInput" accept="image/*">
 </div>
 
@@ -69,27 +77,77 @@ const webcam = document.getElementById('webcam');
 const classesContainer = document.getElementById('classesContainer');
 const resultEl = document.getElementById('result');
 const imageInput = document.getElementById('imageInput');
+const cameraControls = document.getElementById('cameraControls');
 
 let exampleCounts = [];
 let classLabels = [];
 let numClassesGlobal = 0;
+let deviceType = null;
+let facingMode = "user";
+let deviceId = null;
+let videoDevices = [];
+
+// Set device type
+function setDevice(type){
+  deviceType = type;
+  document.getElementById('devicePrompt').style.display = 'none';
+  document.getElementById('controls').style.display = 'block';
+  if(type==='phone' || type==='computer'){
+    webcam.style.display='block';
+    setupCameraControls();
+  }
+}
 
 // Setup webcam
 async function setupCamera() {
-  const stream = await navigator.mediaDevices.getUserMedia({video:true});
-  webcam.srcObject = stream;
+  if(window.currentStream) window.currentStream.getTracks().forEach(track=>track.stop());
+  const constraints = (deviceType==='phone') ? {video:{facingMode}} : {video:{deviceId:{exact:deviceId}}};
+  window.currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+  webcam.srcObject = window.currentStream;
 }
 
+// Setup camera controls based on device
+async function setupCameraControls() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  videoDevices = devices.filter(d=>d.kind==='videoinput');
+  if(deviceType==='phone'){
+    cameraControls.innerHTML = `<button onclick="switchCamera()">🔄 Switch Camera</button>`;
+    await setupCamera();
+  } else {
+    let selectHtml = `<select onchange="changeCamera(this.value)">`;
+    videoDevices.forEach(d=>{
+      selectHtml += `<option value="${d.deviceId}">${d.label || 'Camera'}</option>`;
+    });
+    selectHtml += `</select>`;
+    cameraControls.innerHTML = selectHtml;
+    deviceId = videoDevices[0].deviceId;
+    await setupCamera();
+  }
+}
+
+// Switch front/back camera (phone)
+async function switchCamera() {
+  facingMode = (facingMode==="user") ? "environment" : "user";
+  await setupCamera();
+}
+
+// Change camera (computer)
+async function changeCamera(newDeviceId){
+  deviceId=newDeviceId;
+  await setupCamera();
+}
+
+// Dynamic classes
 async function createClasses() {
-  classesContainer.innerHTML = '';
+  classesContainer.innerHTML='';
   exampleCounts = [];
   classLabels = [];
   const numClasses = parseInt(document.getElementById('numClasses').value);
-  numClassesGlobal = numClasses;
+  numClassesGlobal=numClasses;
   for(let i=0;i<numClasses;i++){
     const div = document.createElement('div');
-    div.className = 'class-card';
-    div.innerHTML = `
+    div.className='class-card';
+    div.innerHTML=`
       <input type="text" placeholder="Class ${i+1} label" id="label${i}" style="margin-bottom:5px;width:150px;">
       <button id="add${i}">Add Image</button>
       <div class="class-counter" id="count${i}">0 examples</div>
@@ -98,57 +156,54 @@ async function createClasses() {
     classesContainer.appendChild(div);
     exampleCounts[i]=0;
 
-    // Add image event
-    document.getElementById(`add${i}`).onclick = ()=>{
-      document.getElementById(`file${i}`).click();
-    };
+    document.getElementById(`add${i}`).onclick = ()=>{ document.getElementById(`file${i}`).click(); };
     document.getElementById(`file${i}`).addEventListener('change', async (e)=>{
-      const file = e.target.files[0];
+      const file=e.target.files[0];
       if(!file) return;
-      const img = new Image();
-      img.src = URL.createObjectURL(file);
-      img.onload = ()=>{
-        const activation = net.infer(img,'conv_preds');
+      const img=new Image();
+      img.src=URL.createObjectURL(file);
+      img.onload=()=>{
+        const activation=net.infer(img,'conv_preds');
         classifier.addExample(activation,i);
         exampleCounts[i]++;
-        document.getElementById(`count${i}`).innerText = `${exampleCounts[i]} examples`;
+        document.getElementById(`count${i}`).innerText=`${exampleCounts[i]} examples`;
       };
     });
   }
 }
 
-// Prediction loop
-async function predictWebcam() {
+// Predict webcam
+async function predictWebcam(){
   while(true){
     if(classifier.getNumClasses()>0){
-      const activation = net.infer(webcam,'conv_preds');
-      const prediction = await classifier.predictClass(activation);
-      const label = document.getElementById(`label${prediction.label}`).value || `Class ${parseInt(prediction.label)+1}`;
-      resultEl.innerText = `Prediction: ${label}`;
+      const activation=net.infer(webcam,'conv_preds');
+      const prediction=await classifier.predictClass(activation);
+      const label=document.getElementById(`label${prediction.label}`).value || `Class ${parseInt(prediction.label)+1}`;
+      resultEl.innerText=`Prediction: ${label}`;
     }
     await tf.nextFrame();
   }
 }
 
-// Predict from uploaded test image
+// Predict uploaded test image
 imageInput.addEventListener('change', async (e)=>{
-  const file = e.target.files[0];
+  const file=e.target.files[0];
   if(!file) return;
-  const img = new Image();
-  img.src = URL.createObjectURL(file);
-  img.onload = async ()=>{
-    const activation = net.infer(img,'conv_preds');
-    const prediction = await classifier.predictClass(activation);
-    const label = document.getElementById(`label${prediction.label}`).value || `Class ${parseInt(prediction.label)+1}`;
-    resultEl.innerText = `Prediction (image): ${label}`;
+  const img=new Image();
+  img.src=URL.createObjectURL(file);
+  img.onload=()=>{
+    const activation=net.infer(img,'conv_preds');
+    classifier.predictClass(activation).then(prediction=>{
+      const label=document.getElementById(`label${prediction.label}`).value || `Class ${parseInt(prediction.label)+1}`;
+      resultEl.innerText=`Prediction (image): ${label}`;
+    });
   }
 });
 
-// Initialize model and webcam
-async function setup() {
-  net = await mobilenet.load();
-  classifier = knnClassifier.create();
-  await setupCamera();
+// Initialize
+async function setup(){
+  net=await mobilenet.load();
+  classifier=knnClassifier.create();
   predictWebcam();
 }
 
