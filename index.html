@@ -10,121 +10,106 @@
 <style>
 body {
   font-family: Arial, sans-serif;
-  text-align: center;
-  background: linear-gradient(135deg, #74ebd5, #9face6);
+  background: #f7f7f7;
   margin: 0;
-  padding: 20px;
-  color: #333;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-h2 { margin-bottom: 10px; }
-video {
+h2 { margin: 20px 0; }
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  max-width: 900px;
+  width: 100%;
+}
+.class-card {
+  background: white;
   border-radius: 15px;
-  margin: 15px 0;
-  width: 90%;
-  max-width: 350px;
+  padding: 15px;
+  width: 200px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.class-card button {
+  padding: 10px 15px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #4caf50;
+  color: white;
+  font-weight: bold;
+}
+.class-card button:hover { background: #45a049; }
+.class-counter { margin-top: 5px; font-size: 14px; color: #333; }
+#webcam {
+  border-radius: 15px;
+  width: 320px;
+  max-width: 90%;
+  margin-top: 20px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
-.buttons {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-button, select {
-  padding: 12px 18px;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  cursor: pointer;
-  background: #fff;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-  transition: transform 0.2s;
-}
-button:hover, select:hover { transform: scale(1.05); }
-.class-counter { font-size: 14px; margin-top: -8px; margin-bottom: 10px; color: #222; }
 #result {
-  font-size: 20px;
-  font-weight: bold;
-  margin-top: 15px;
-  background: rgba(255,255,255,0.7);
-  display: inline-block;
-  padding: 8px 14px;
-  border-radius: 12px;
-}
-#cameraControls { margin: 15px 0; }
-
-/* Custom modal */
-#deviceModal {
-  position: fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  background: rgba(0,0,0,0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-#deviceModal .modal-content {
-  background: white;
-  padding: 30px;
-  border-radius: 20px;
-  text-align: center;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.4);
-  max-width: 300px;
-  width: 90%;
-}
-#deviceModal h3 {
-  margin-bottom: 20px;
+  margin-top: 20px;
   font-size: 22px;
+  font-weight: bold;
   color: #444;
 }
-#deviceModal button {
-  width: 100%;
-  margin: 8px 0;
-  font-size: 18px;
+#imageInput {
+  margin-top: 15px;
 }
+#cameraControls {
+  margin: 15px 0;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+button, select { cursor: pointer; border-radius: 10px; padding: 10px; font-size: 16px; border: none; box-shadow: 0 3px 10px rgba(0,0,0,0.2); }
+button:hover, select:hover { transform: scale(1.05); transition: 0.2s; }
 </style>
 </head>
 <body>
-<h2>📱💻 Mini Teachable Machine</h2>
-<video id="webcam" autoplay playsinline></video>
+<h2>Mini Teachable Machine</h2>
 
-<div class="buttons">
-  <div>
-    <button onclick="addExample(0)">Teach Class 1</button>
+<div class="container">
+  <div class="class-card">
+    <div>Class 1</div>
+    <button onclick="addExample(0)">Add Example</button>
     <div class="class-counter" id="count0">0 examples</div>
   </div>
-  <div>
-    <button onclick="addExample(1)">Teach Class 2</button>
+  <div class="class-card">
+    <div>Class 2</div>
+    <button onclick="addExample(1)">Add Example</button>
     <div class="class-counter" id="count1">0 examples</div>
   </div>
-  <div>
-    <button onclick="addExample(2)">Teach Class 3</button>
+  <div class="class-card">
+    <div>Class 3</div>
+    <button onclick="addExample(2)">Add Example</button>
     <div class="class-counter" id="count2">0 examples</div>
   </div>
 </div>
 
+<video id="webcam" autoplay playsinline></video>
 <div id="cameraControls"></div>
-<p id="result">Prediction: none</p>
 
-<!-- Custom modal -->
-<div id="deviceModal">
-  <div class="modal-content">
-    <h3>Select Your Device</h3>
-    <button onclick="setDevice(true)">📱 Phone</button>
-    <button onclick="setDevice(false)">💻 Computer</button>
-  </div>
+<div>
+  <input type="file" id="imageInput" accept="image/*">
 </div>
+
+<p id="result">Prediction: none</p>
 
 <script>
 const webcam = document.getElementById('webcam');
 const result = document.getElementById('result');
-const counters = [document.getElementById("count0"),
-                  document.getElementById("count1"),
-                  document.getElementById("count2")];
+const counters = [document.getElementById("count0"), document.getElementById("count1"), document.getElementById("count2")];
 const cameraControls = document.getElementById("cameraControls");
-const deviceModal = document.getElementById("deviceModal");
+const imageInput = document.getElementById("imageInput");
 
 let net, classifier;
 let exampleCounts = [0,0,0];
@@ -132,67 +117,17 @@ let currentStream;
 let facingMode = "user";
 let deviceId = null;
 let isPhone = true;
+let videoDevices = [];
 
-// Handle device selection
-async function setDevice(phone) {
-  isPhone = phone;
-  deviceModal.style.display = "none";
-  await setupCameraOptions();
-}
-
-// Setup camera options based on device
-async function setupCameraOptions() {
-  if (isPhone) {
-    cameraControls.innerHTML = `<button onclick="switchCamera()">🔄 Switch Camera</button>`;
-    await setupCamera();
-  } else {
-    // Request temporary camera access to get labels
-    const tempStream = await navigator.mediaDevices.getUserMedia({video:true});
-    tempStream.getTracks().forEach(track => track.stop());
-
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(d => d.kind === "videoinput");
-
-    let selectHtml = `<select id="cameraSelect" onchange="changeCamera(this.value)">`;
-    videoDevices.forEach((d,i)=>{
-      selectHtml += `<option value="${d.deviceId}">${d.label || "Camera "+(i+1)}</option>`;
-    });
-    selectHtml += "</select>";
-    cameraControls.innerHTML = selectHtml;
-
-    deviceId = videoDevices[0].deviceId;
-    await setupCamera();
-  }
-}
-
-// Start camera stream
+// Setup webcam stream
 async function setupCamera() {
-  if (currentStream) currentStream.getTracks().forEach(track=>track.stop());
+  if(currentStream) currentStream.getTracks().forEach(track=>track.stop());
   const constraints = isPhone ? { video: { facingMode } } : { video: { deviceId: { exact: deviceId } } };
   currentStream = await navigator.mediaDevices.getUserMedia(constraints);
   webcam.srcObject = currentStream;
 }
 
-// Switch front/back camera for phones
-async function switchCamera() {
-  facingMode = (facingMode==="user") ? "environment" : "user";
-  await setupCamera();
-}
-
-// Change camera on computer
-async function changeCamera(newDeviceId) {
-  deviceId = newDeviceId;
-  await setupCamera();
-}
-
-// Load model and start prediction
-async function setup() {
-  net = await mobilenet.load();
-  classifier = knnClassifier.create();
-  predict();
-}
-
-// Add example to classifier
+// Add example from webcam
 async function addExample(classId) {
   const activation = net.infer(webcam,'conv_preds');
   classifier.addExample(activation,classId);
@@ -200,8 +135,8 @@ async function addExample(classId) {
   counters[classId].innerText = `${exampleCounts[classId]} examples`;
 }
 
-// Live prediction loop
-async function predict() {
+// Predict from webcam
+async function predictWebcam() {
   while(true){
     if(classifier.getNumClasses()>0){
       const activation = net.infer(webcam,'conv_preds');
@@ -210,6 +145,62 @@ async function predict() {
     }
     await tf.nextFrame();
   }
+}
+
+// Predict from uploaded image
+imageInput.addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
+  img.onload = async ()=>{
+    const activation = net.infer(img,'conv_preds');
+    const prediction = await classifier.predictClass(activation);
+    result.innerText = `Prediction (image): Class ${parseInt(prediction.label)+1}`;
+  }
+});
+
+// Switch front/back camera for phones
+async function switchCamera() {
+  facingMode = (facingMode==="user") ? "environment" : "user";
+  await setupCamera();
+}
+
+// Change camera on computers
+async function changeCamera(newDeviceId) {
+  deviceId = newDeviceId;
+  await setupCamera();
+}
+
+// Setup camera controls based on device
+async function setupCameraControls() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  videoDevices = devices.filter(d=>d.kind==='videoinput');
+
+  // Heuristic: if only one video device or mobile device, treat as phone
+  isPhone = videoDevices.length <= 2 && /Mobi|Android/i.test(navigator.userAgent);
+
+  if(isPhone){
+    cameraControls.innerHTML = `<button onclick="switchCamera()">🔄 Switch Camera</button>`;
+    await setupCamera();
+  } else {
+    let selectHtml = `<select onchange="changeCamera(this.value)">`;
+    videoDevices.forEach(d=>{
+      selectHtml += `<option value="${d.deviceId}">${d.label || 'Camera'}</option>`;
+    });
+    selectHtml += `</select>`;
+    cameraControls.innerHTML = selectHtml;
+    deviceId = videoDevices[0].deviceId;
+    await setupCamera();
+  }
+}
+
+// Initialize model and camera
+async function setup() {
+  net = await mobilenet.load();
+  classifier = knnClassifier.create();
+  await setupCameraControls();
+  predictWebcam();
 }
 
 setup();
