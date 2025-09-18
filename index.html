@@ -9,15 +9,19 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
 <style>
 body {
-  font-family: Arial, sans-serif;
-  background: #f7f7f7;
+  font-family: 'Arial', sans-serif;
+  background: #ffffff;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-h2 { margin: 20px 0; }
+h2 {
+  margin: 20px 0;
+  color: #333;
+  font-weight: 600;
+}
 .container {
   display: flex;
   flex-wrap: wrap;
@@ -27,39 +31,41 @@ h2 { margin: 20px 0; }
   width: 100%;
 }
 .class-card {
-  background: white;
-  border-radius: 15px;
+  background: #ffffff;
+  border-radius: 12px;
   padding: 15px;
   width: 200px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: transform 0.2s;
 }
+.class-card:hover { transform: translateY(-3px); }
 .class-card button {
   padding: 10px 15px;
   margin-top: 10px;
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  background: #4caf50;
+  background: #007bff;
   color: white;
   font-weight: bold;
 }
-.class-card button:hover { background: #45a049; }
-.class-counter { margin-top: 5px; font-size: 14px; color: #333; }
+.class-card button:hover { background: #0056b3; }
+.class-counter { margin-top: 5px; font-size: 14px; color: #555; }
 #webcam {
-  border-radius: 15px;
+  border-radius: 12px;
   width: 320px;
   max-width: 90%;
   margin-top: 20px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
 }
 #result {
   margin-top: 20px;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: bold;
-  color: #444;
+  color: #333;
 }
 #imageInput {
   margin-top: 15px;
@@ -70,7 +76,15 @@ h2 { margin: 20px 0; }
   gap: 10px;
   flex-wrap: wrap;
 }
-button, select { cursor: pointer; border-radius: 10px; padding: 10px; font-size: 16px; border: none; box-shadow: 0 3px 10px rgba(0,0,0,0.2); }
+button, select {
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
 button:hover, select:hover { transform: scale(1.05); transition: 0.2s; }
 </style>
 </head>
